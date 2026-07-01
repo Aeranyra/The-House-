@@ -324,14 +324,78 @@
     z-index:1;
   }
 
+  /* ---------- Ambient decoration ---------- */
+  .ember-layer{
+    pointer-events:none;
+    position:fixed; inset:0;
+    overflow:hidden;
+    z-index:2;
+  }
+  .ember{
+    position:absolute;
+    bottom:-4vh;
+    width:5px;height:5px;
+    border-radius:50%;
+    background:radial-gradient(circle, #fff2c4, var(--gold) 60%, transparent 75%);
+    opacity:0;
+    animation-name: ember-rise;
+    animation-timing-function: ease-in;
+    animation-iteration-count: infinite;
+  }
+  @keyframes ember-rise{
+    0%{ transform:translateY(0) translateX(0); opacity:0; }
+    10%{ opacity:.75; }
+    50%{ transform:translateY(-52vh) translateX(var(--drift, 12px)); opacity:.55; }
+    90%{ opacity:0; }
+    100%{ transform:translateY(-100vh) translateX(calc(var(--drift, 12px) * 2)); opacity:0; }
+  }
+
+  .corner-flourish{
+    position:fixed;
+    width:56px;height:56px;
+    border:1px solid var(--gold-dim);
+    opacity:.35;
+    pointer-events:none;
+    z-index:3;
+  }
+  .corner-flourish.tl{ top:18px; left:18px; border-right:none; border-bottom:none; }
+  .corner-flourish.tr{ top:18px; right:18px; border-left:none; border-bottom:none; }
+  .corner-flourish.bl{ bottom:18px; left:18px; border-right:none; border-top:none; }
+  .corner-flourish.br{ bottom:18px; right:18px; border-left:none; border-top:none; }
+
+  /* ---------- Butterfly cursor trail ---------- */
+  .butterfly-trail{
+    position:fixed;
+    top:0; left:0;
+    pointer-events:none;
+    z-index:70;
+    font-size:1rem;
+    color:var(--gold);
+    filter: drop-shadow(0 0 4px rgba(205,160,89,.5));
+    animation: butterfly-drift 1.3s ease-out forwards;
+    will-change: transform, opacity;
+  }
+  @keyframes butterfly-drift{
+    0%{ transform:translate(-50%,-50%) scale(.9) rotate(var(--rot, 0deg)); opacity:.9; }
+    100%{ transform:translate(-50%,-50%) translateY(-34px) scale(.5) rotate(var(--rot2, 0deg)); opacity:0; }
+  }
+
   @media (max-width:480px){
     .doors{ grid-template-columns:repeat(2, 1fr); }
+  }
+  @media (hover:none){
+    .butterfly-trail{ display:none; }
   }
 </style>
 </head>
 <body>
 
 <div class="vignette"></div>
+<div class="ember-layer" id="ember-layer"></div>
+<div class="corner-flourish tl"></div>
+<div class="corner-flourish tr"></div>
+<div class="corner-flourish bl"></div>
+<div class="corner-flourish br"></div>
 
 <!-- LOCK SCREEN -->
 <section id="screen-lock" class="screen active">
@@ -543,6 +607,51 @@ document.getElementById('opening-continue').addEventListener('click', () => {
 });
 
 buildDoors();
+
+/* ---------- Ambient embers ---------- */
+(function(){
+  const layer = document.getElementById('ember-layer');
+  const count = window.innerWidth < 480 ? 10 : 18;
+  for (let i = 0; i < count; i++){
+    const e = document.createElement('div');
+    e.className = 'ember';
+    const left = Math.random() * 100;
+    const duration = 7 + Math.random() * 7;
+    const delay = Math.random() * 12;
+    const drift = (Math.random() * 40 - 20) + 'px';
+    const scale = 0.6 + Math.random() * 0.9;
+    e.style.left = left + 'vw';
+    e.style.setProperty('--drift', drift);
+    e.style.animationDuration = duration + 's';
+    e.style.animationDelay = delay + 's';
+    e.style.transform = `scale(${scale})`;
+    layer.appendChild(e);
+  }
+})();
+
+/* ---------- Butterfly cursor trail ---------- */
+(function(){
+  if (window.matchMedia('(hover: none)').matches) return;
+  let lastTime = 0;
+  const minInterval = 90; // ms between spawns
+  window.addEventListener('pointermove', (e) => {
+    const now = performance.now();
+    if (now - lastTime < minInterval) return;
+    lastTime = now;
+
+    const b = document.createElement('span');
+    b.className = 'butterfly-trail';
+    b.textContent = '🦋';
+    b.style.left = e.clientX + 'px';
+    b.style.top = e.clientY + 'px';
+    const rot = (Math.random() * 40 - 20);
+    const rot2 = rot + (Math.random() * 40 - 20);
+    b.style.setProperty('--rot', rot + 'deg');
+    b.style.setProperty('--rot2', rot2 + 'deg');
+    document.body.appendChild(b);
+    setTimeout(() => b.remove(), 1400);
+  });
+})();
 </script>
 
 </body>
